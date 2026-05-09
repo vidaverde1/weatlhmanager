@@ -2,99 +2,94 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>WealthTracker Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen">
+<body>
 
-  <!-- Header -->
+  <!-- ═══ HEADER ═══ -->
   <header class="header-bar">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <i data-lucide="trending-up" class="text-emerald-400" style="width:22px;height:22px"></i>
-        <span class="text-lg font-bold tracking-tight">WealthTracker <span class="text-emerald-400">Pro</span></span>
+    <div class="header-inner">
+      <div class="header-logo">
+        <i data-lucide="trending-up" class="text-emerald-400" style="width:20px;height:20px;flex-shrink:0"></i>
+        <span>WealthTracker <span class="text-emerald-400">Pro</span></span>
       </div>
-      <nav class="flex items-center gap-2 flex-wrap justify-end">
-
-        <!-- Dolar Blue indicator -->
+      <div class="header-controls">
         <div class="blue-chip">
-          <i data-lucide="dollar-sign" class="icon-xs text-amber-400 flex-shrink-0"></i>
-          <span class="text-gray-500 text-xs font-medium">Blue</span>
-          <span id="blue-rate" class="text-amber-400 font-mono text-xs font-bold">cargando...</span>
+          <i data-lucide="dollar-sign" class="icon-xs text-amber-400"></i>
+          <span class="text-gray-500 text-xs font-medium" style="display:none" id="blue-label">Blue</span>
+          <span id="blue-rate" class="text-amber-400 font-mono text-xs font-bold">...</span>
           <button onclick="refreshBlue()" id="blue-refresh" class="blue-refresh-btn" title="Actualizar cotización">
-            <i data-lucide="refresh-cw" style="width:11px;height:11px"></i>
+            <i data-lucide="refresh-cw" style="width:10px;height:10px"></i>
           </button>
         </div>
-
-        <!-- Currency display toggle -->
         <div class="currency-toggle">
           <button id="toggle-usd" onclick="setDisplay('USD')" class="cur-btn active">USD</button>
           <button id="toggle-ars" onclick="setDisplay('ARS')" class="cur-btn">ARS</button>
         </div>
-
-        <div style="width:1px;height:20px;background:#1e293b;margin:0 4px"></div>
-
-        <button onclick="showView('dashboard')" id="tab-dashboard" class="tab-btn active">
-          <i data-lucide="layout-dashboard" class="icon-sm"></i> Dashboard
+        <div class="desktop-only" style="display:flex;align-items:center;gap:2px">
+          <div style="width:1px;height:20px;background:#1e293b;margin:0 4px"></div>
+          <button onclick="showView('dashboard')" id="tab-dashboard" class="tab-btn active">
+            <i data-lucide="layout-dashboard" class="icon-sm"></i> Dashboard
+          </button>
+          <button onclick="showView('portfolio')" id="tab-portfolio" class="tab-btn">
+            <i data-lucide="briefcase" class="icon-sm"></i> Portfolio
+          </button>
+        </div>
+        <button onclick="openModal()" class="btn-primary btn-add-header">
+          <i data-lucide="plus" class="icon-sm"></i>
+          <span class="btn-add-text">Agregar Activo</span>
         </button>
-        <button onclick="showView('portfolio')" id="tab-portfolio" class="tab-btn">
-          <i data-lucide="briefcase" class="icon-sm"></i> Portfolio
-        </button>
-        <button onclick="openModal()" class="btn-primary ml-1">
-          <i data-lucide="plus" class="icon-sm"></i> Agregar Activo
-        </button>
-        <button onclick="openSyncModal()" class="btn-cloud" title="Sincronización y Backup">
+        <button onclick="openSyncModal()" class="btn-cloud" title="Datos y Sincronización">
           <i data-lucide="cloud" style="width:15px;height:15px"></i>
           <span id="sync-badge" class="sync-dot-badge ok hidden"></span>
         </button>
-      </nav>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6">
+  <main class="main-inner">
 
-    <!-- ===== DASHBOARD VIEW ===== -->
+    <!-- ═══ DASHBOARD ═══ -->
     <div id="view-dashboard">
 
       <!-- KPI Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="kpi-grid">
         <div class="kpi-card">
           <div class="flex justify-between items-start">
             <div>
               <p class="kpi-label">Patrimonio Total</p>
-              <p id="kpi-patrimonio" class="kpi-value">$0.00</p>
+              <p id="kpi-patrimonio" class="kpi-value">–</p>
             </div>
-            <div class="icon-badge bg-blue-500/20 text-blue-400">
+            <div class="icon-badge" style="background:rgba(59,130,246,.15);color:#60a5fa">
               <i data-lucide="wallet" class="icon-md"></i>
             </div>
           </div>
-          <p id="kpi-assets-count" class="kpi-sub">0 activos registrados</p>
+          <p id="kpi-assets-count" class="kpi-sub">0 activos</p>
         </div>
-
         <div class="kpi-card">
           <div class="flex justify-between items-start">
             <div>
               <p class="kpi-label">P&amp;L Total</p>
-              <p id="kpi-pnl" class="kpi-value">$0.00</p>
+              <p id="kpi-pnl" class="kpi-value">–</p>
             </div>
-            <div class="icon-badge bg-emerald-500/20 text-emerald-400">
+            <div class="icon-badge" style="background:rgba(16,185,129,.15);color:#34d399">
               <i data-lucide="activity" class="icon-md"></i>
             </div>
           </div>
           <p id="kpi-pnl-pct" class="kpi-sub">0.00% vs costo</p>
         </div>
-
         <div class="kpi-card">
           <div class="flex justify-between items-start">
             <div>
-              <p class="kpi-label">Rendimiento Portafolio</p>
+              <p class="kpi-label">Rendimiento</p>
               <p id="kpi-rendimiento" class="kpi-value">0.00%</p>
             </div>
-            <div class="icon-badge bg-violet-500/20 text-violet-400">
+            <div class="icon-badge" style="background:rgba(139,92,246,.15);color:#a78bfa">
               <i data-lucide="percent" class="icon-md"></i>
             </div>
           </div>
@@ -102,84 +97,107 @@
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="chart-card">
-          <h3 class="chart-title">Composición por Tipo</h3>
+      <!-- Allocation Bar -->
+      <div id="alloc-section" class="chart-card hidden">
+        <h3 class="chart-title">Distribución del Portafolio</h3>
+        <div class="alloc-bar" id="alloc-bar"></div>
+        <div id="alloc-legend" class="flex flex-wrap gap-3 mt-3"></div>
+      </div>
+
+      <!-- Top Movers -->
+      <div id="movers-section" class="chart-card hidden">
+        <h3 class="chart-title">Posiciones Destacadas</h3>
+        <div id="top-movers" class="movers-grid"></div>
+      </div>
+
+      <!-- Composition Charts -->
+      <div class="chart-grid-2">
+        <div class="chart-card" style="margin-bottom:0">
+          <h3 class="chart-title">Por Tipo de Activo</h3>
           <div class="chart-wrap"><canvas id="chart-tipo"></canvas></div>
         </div>
-        <div class="chart-card">
-          <h3 class="chart-title">Composición por Locación</h3>
+        <div class="chart-card" style="margin-bottom:0">
+          <h3 class="chart-title">Por Locación</h3>
           <div class="chart-wrap"><canvas id="chart-loc"></canvas></div>
         </div>
       </div>
 
+      <!-- Portfolio History -->
+      <div id="history-section" class="chart-card hidden">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="chart-title" style="margin-bottom:0">Evolución del Portafolio</h3>
+          <span id="history-period" class="text-xs text-gray-600"></span>
+        </div>
+        <div class="chart-wrap-lg"><canvas id="chart-history"></canvas></div>
+      </div>
+
       <!-- Detail Table -->
       <div class="chart-card">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-3 flex-wrap">
-            <h3 class="chart-title" style="margin-bottom:0">Detalle de Posiciones</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="chart-title" style="margin-bottom:0">Posiciones</h3>
             <button onclick="fetchAllPrices()" id="btn-refresh-prices" class="btn-live-prices">
-              <i data-lucide="refresh-cw" class="icon-xs"></i> Actualizar precios
+              <i data-lucide="refresh-cw" class="icon-xs"></i>
+              <span class="hidden-xs">Actualizar precios</span>
             </button>
-            <span id="price-update-time" class="text-xs text-gray-600"></span>
+            <span id="price-update-time" class="text-xs text-gray-600 desktop-only"></span>
           </div>
           <div class="flex gap-2">
             <select id="filter-type" onchange="renderTable()" class="select-sm">
               <option value="">Todos los tipos</option>
               <option>Acciones</option><option>CEDEARs</option><option>Bonos</option>
-              <option>Cripto</option><option>Propiedades</option><option>Money Market</option><option>Mercaderia</option><option>Vehiculos</option>
+              <option>Cripto</option><option>Propiedades</option><option>Money Market</option>
+              <option>Mercaderia</option><option>Vehiculos</option>
             </select>
             <select id="filter-loc" onchange="renderTable()" class="select-sm">
-              <option value="">Todas las locaciones</option>
+              <option value="">Todas</option>
               <option>Exchange</option><option>Banco</option><option>Fisico</option>
             </select>
           </div>
         </div>
-        <!-- Price legend -->
-        <div class="flex items-center gap-4 mb-3 text-xs text-gray-600">
-          <span class="flex items-center gap-1"><span class="price-dot live"></span>Precio en vivo</span>
-          <span class="flex items-center gap-1"><span class="price-dot error"></span>Sin datos</span>
-          <span class="flex items-center gap-1"><span class="price-dot manual"></span>Manual</span>
+        <div class="price-legend">
+          <span><span class="price-dot live"></span>Live</span>
+          <span><span class="price-dot error"></span>Sin datos</span>
+          <span><span class="price-dot manual"></span>Manual</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="table-head">
-                <th class="th-sort" onclick="sortBy('ticker')">Ticker <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort" onclick="sortBy('type')">Tipo <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort text-right" onclick="sortBy('nominals')">Nominales <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort text-right" onclick="sortBy('purchasePrice')">P. Compra <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort text-right" onclick="sortBy('value')">Valor Actual <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort text-right" onclick="sortBy('pnl')">P&amp;L <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-sort text-right" onclick="sortBy('pct')">Rend.% <i data-lucide="chevrons-up-down" class="icon-xs inline-block align-middle"></i></th>
-                <th class="th-plain">Locación</th>
-                <th class="th-plain">Acciones</th>
+                <th class="th-sort" onclick="sortBy('ticker')">Ticker</th>
+                <th class="th-sort col-hide" onclick="sortBy('type')">Tipo</th>
+                <th class="th-sort text-right col-hide" onclick="sortBy('nominals')">Noms.</th>
+                <th class="th-sort text-right col-hide" onclick="sortBy('purchasePrice')">P. Compra</th>
+                <th class="th-sort text-right" onclick="sortBy('value')">Valor</th>
+                <th class="th-sort text-right" onclick="sortBy('pnl')">P&amp;L</th>
+                <th class="th-sort text-right" onclick="sortBy('pct')">%</th>
+                <th class="th-plain col-hide">Loc.</th>
+                <th class="th-plain"></th>
               </tr>
             </thead>
             <tbody id="table-body"></tbody>
           </table>
-          <div id="empty-state" class="hidden py-12 text-center text-gray-600">
-            <i data-lucide="inbox" class="mx-auto mb-2 opacity-40" style="width:40px;height:40px"></i>
-            <p class="text-sm">Sin activos registrados. Agregue su primer activo.</p>
+          <div id="empty-state" class="hidden empty-state">
+            <i data-lucide="inbox" style="width:36px;height:36px" class="opacity-30 mx-auto mb-2"></i>
+            <p>Sin activos registrados.<br>Tap <strong>+</strong> para agregar.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== PORTFOLIO VIEW ===== -->
+    <!-- ═══ PORTFOLIO ═══ -->
     <div id="view-portfolio" class="hidden">
       <div class="chart-card">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-3">
-            <h3 class="font-semibold text-gray-200">Gestión de Activos</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <h3 class="font-semibold text-gray-200 text-sm">Gestión de Activos</h3>
             <button onclick="fetchAllPrices()" id="btn-refresh-prices-portfolio" class="btn-live-prices">
-              <i data-lucide="refresh-cw" class="icon-xs"></i> Actualizar
+              <i data-lucide="refresh-cw" class="icon-xs"></i>
             </button>
-            <span id="price-update-time-portfolio" class="text-xs text-gray-600"></span>
+            <span id="price-update-time-portfolio" class="text-xs text-gray-600 desktop-only"></span>
           </div>
-          <button onclick="openModal()" class="btn-primary">
-            <i data-lucide="plus" class="icon-sm"></i> Nuevo Activo
+          <button onclick="openModal()" class="btn-primary" style="height:36px;padding:0 14px;font-size:13px">
+            <i data-lucide="plus" class="icon-sm"></i> Nuevo
           </button>
         </div>
         <div class="overflow-x-auto">
@@ -187,22 +205,22 @@
             <thead>
               <tr class="table-head text-left">
                 <th class="th-plain">Ticker</th>
-                <th class="th-plain">Tipo</th>
+                <th class="th-plain col-hide">Tipo</th>
                 <th class="th-plain text-right">Nominales</th>
-                <th class="th-plain text-right">P. Compra</th>
+                <th class="th-plain text-right col-hide">P. Compra</th>
                 <th class="th-plain text-right">Precio Actual</th>
                 <th class="th-plain text-right">Valor Total</th>
-                <th class="th-plain">Fecha</th>
-                <th class="th-plain">Locación</th>
-                <th class="th-plain">Moneda</th>
-                <th class="th-plain">Acciones</th>
+                <th class="th-plain col-hide">Fecha</th>
+                <th class="th-plain col-hide">Loc.</th>
+                <th class="th-plain col-hide">Mon.</th>
+                <th class="th-plain"></th>
               </tr>
             </thead>
             <tbody id="portfolio-body"></tbody>
           </table>
-          <div id="portfolio-empty" class="hidden py-12 text-center text-gray-600">
-            <i data-lucide="briefcase" class="mx-auto mb-2 opacity-40" style="width:40px;height:40px"></i>
-            <p class="text-sm">Sin activos. Comience agregando uno.</p>
+          <div id="portfolio-empty" class="hidden empty-state">
+            <i data-lucide="briefcase" style="width:36px;height:36px" class="opacity-30 mx-auto mb-2"></i>
+            <p>Sin activos registrados.</p>
           </div>
         </div>
       </div>
@@ -210,51 +228,78 @@
 
   </main>
 
-  <!-- ===== MODAL ===== -->
+  <!-- ═══ BOTTOM NAV (mobile) ═══ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button onclick="showView('dashboard')" id="bottom-dashboard" class="bottom-nav-btn active">
+      <i data-lucide="layout-dashboard" style="width:22px;height:22px"></i>
+      <span>Dashboard</span>
+    </button>
+    <button onclick="openModal()" class="bottom-nav-btn bottom-nav-add">
+      <div class="bottom-nav-add-icon">
+        <i data-lucide="plus" style="width:22px;height:22px;color:#fff"></i>
+      </div>
+    </button>
+    <button onclick="showView('portfolio')" id="bottom-portfolio" class="bottom-nav-btn">
+      <i data-lucide="briefcase" style="width:22px;height:22px"></i>
+      <span>Portfolio</span>
+    </button>
+  </nav>
+
+  <!-- ═══ ASSET MODAL ═══ -->
   <div id="modal" class="modal-overlay hidden" onclick="closeModalOutside(event)">
     <div class="modal-box">
-      <div class="flex justify-between items-center mb-6">
-        <h2 id="modal-title" class="text-lg font-bold">Agregar Activo</h2>
-        <button onclick="closeModal()" class="text-gray-500 hover:text-white transition-colors">
-          <i data-lucide="x" class="icon-md"></i>
-        </button>
+      <div class="flex justify-between items-center mb-5">
+        <h2 id="modal-title" class="text-base font-bold">Agregar Activo</h2>
+        <button onclick="closeModal()" class="btn-close"><i data-lucide="x" class="icon-md"></i></button>
       </div>
       <form id="asset-form" onsubmit="saveAsset(event)">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="form-grid">
           <div class="form-group">
-            <label>Tipo de Activo</label>
+            <label>Tipo</label>
             <select id="f-type" required class="form-control" onchange="updatePreview()">
               <option value="">Seleccionar...</option>
               <option>Acciones</option><option>CEDEARs</option><option>Bonos</option>
-              <option>Cripto</option><option>Propiedades</option><option>Money Market</option><option>Mercaderia</option><option>Vehiculos</option>
+              <option>Cripto</option><option>Propiedades</option><option>Money Market</option>
+              <option>Mercaderia</option><option>Vehiculos</option>
             </select>
           </div>
           <div class="form-group">
             <label>Ticker / Nombre</label>
-            <input id="f-ticker" type="text" required placeholder="AAPL, BTC, GD30..." class="form-control">
+            <input id="f-ticker" type="text" required placeholder="AAPL, BTC, GD30…" class="form-control"
+              autocomplete="off" autocapitalize="characters">
           </div>
           <div class="form-group">
             <label>Nominales</label>
-            <input id="f-nominals" type="number" step="any" min="0" required placeholder="100" class="form-control" oninput="updatePreview()">
+            <input id="f-nominals" type="number" step="any" min="0" required placeholder="100"
+              class="form-control" inputmode="decimal" oninput="updatePreview()">
           </div>
           <div class="form-group">
-            <label>Moneda del Activo</label>
+            <label>Moneda</label>
             <select id="f-currency" required class="form-control" onchange="updatePreview()">
               <option value="USD">USD — Dólar</option>
-              <option value="ARS">ARS — Peso Argentino</option>
+              <option value="ARS">ARS — Peso</option>
             </select>
           </div>
           <div class="form-group">
             <label>Precio de Compra</label>
-            <input id="f-purchase" type="number" step="any" min="0" required placeholder="150.00" class="form-control" oninput="updatePreview()">
+            <input id="f-purchase" type="number" step="any" min="0" required placeholder="150.00"
+              class="form-control" inputmode="decimal" oninput="updatePreview()">
           </div>
           <div class="form-group">
             <label>Precio Actual</label>
-            <input id="f-amount" type="number" step="any" min="0" required placeholder="180.00" class="form-control" oninput="updatePreview()">
+            <input id="f-amount" type="number" step="any" min="0" required placeholder="180.00"
+              class="form-control" inputmode="decimal" oninput="updatePreview()">
           </div>
-          <div class="form-group">
+          <div class="form-group col-span-2">
             <label>Fecha de Compra</label>
             <input id="f-date" type="date" required class="form-control">
+            <div class="date-quick">
+              <button type="button" onclick="setQuickDate(0)"   class="date-quick-btn">Hoy</button>
+              <button type="button" onclick="setQuickDate(-1)"  class="date-quick-btn">Ayer</button>
+              <button type="button" onclick="setQuickDate(-7)"  class="date-quick-btn">−7d</button>
+              <button type="button" onclick="setQuickDate(-30)" class="date-quick-btn">−1m</button>
+              <button type="button" onclick="setQuickDate(-90)" class="date-quick-btn">−3m</button>
+            </div>
           </div>
           <div class="form-group">
             <label>Locación</label>
@@ -263,27 +308,31 @@
               <option>Exchange</option><option>Banco</option><option>Fisico</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>Notas <span style="font-weight:400;text-transform:none;font-size:11px;color:#475569">(opcional)</span></label>
+            <input id="f-notes" type="text" placeholder="Observaciones…" class="form-control" maxlength="120">
+          </div>
         </div>
 
         <!-- Live P&L Preview -->
-        <div id="form-preview" class="hidden mt-4 p-3 rounded-lg bg-gray-800/60 border border-gray-700/50 text-sm">
-          <div class="grid grid-cols-3 gap-2 text-center">
+        <div id="form-preview" class="hidden form-preview">
+          <div class="form-preview-grid">
             <div>
-              <p class="text-gray-500 text-xs mb-1">Costo Total</p>
-              <p id="prev-cost" class="font-semibold text-gray-200"></p>
+              <p class="form-preview-label">Costo Total</p>
+              <p id="prev-cost" class="form-preview-value"></p>
             </div>
             <div>
-              <p class="text-gray-500 text-xs mb-1">Valor Actual</p>
-              <p id="prev-value" class="font-semibold text-gray-200"></p>
+              <p class="form-preview-label">Valor Actual</p>
+              <p id="prev-value" class="form-preview-value"></p>
             </div>
             <div>
-              <p class="text-gray-500 text-xs mb-1">P&amp;L Estimado</p>
-              <p id="prev-pnl" class="font-semibold"></p>
+              <p class="form-preview-label">P&amp;L Estimado</p>
+              <p id="prev-pnl" class="form-preview-value"></p>
             </div>
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 mt-6">
+        <div class="form-actions">
           <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
           <button type="submit" class="btn-primary">Guardar Activo</button>
         </div>
@@ -291,30 +340,25 @@
     </div>
   </div>
 
-  <!-- ===== SYNC MODAL ===== -->
+  <!-- ═══ SYNC MODAL ═══ -->
   <div id="sync-modal" class="modal-overlay hidden" onclick="closeSyncModalOutside(event)">
     <div class="modal-box" style="max-width:500px">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2">
-          <i data-lucide="cloud" class="icon-md text-blue-400"></i>
-          <h2 class="text-lg font-bold">Datos y Sincronización</h2>
+          <i data-lucide="cloud" class="icon-md" style="color:#60a5fa"></i>
+          <h2 class="text-base font-bold">Datos y Sincronización</h2>
         </div>
-        <button onclick="closeSyncModal()" class="text-gray-500 hover:text-white transition-colors">
-          <i data-lucide="x" class="icon-md"></i>
-        </button>
+        <button onclick="closeSyncModal()" class="btn-close"><i data-lucide="x" class="icon-md"></i></button>
       </div>
 
-      <!-- Export / Import -->
       <div class="sync-section">
-        <h3 class="sync-section-title">
-          <i data-lucide="hard-drive" class="icon-xs"></i> Backup Local
-        </h3>
-        <p class="text-xs text-gray-500 mb-3">Exportá un archivo .json con todos tus activos como respaldo o para importar en otro dispositivo.</p>
+        <h3 class="sync-section-title"><i data-lucide="hard-drive" class="icon-xs"></i> Backup Local</h3>
+        <p class="text-xs text-gray-500 mb-3">Exportá tus datos como .json para respaldo o importarlos en otro dispositivo.</p>
         <div class="flex gap-2">
-          <button onclick="exportData()" class="btn-secondary" style="flex:1">
+          <button onclick="exportData()" class="btn-secondary" style="flex:1;height:40px;font-size:13px">
             <i data-lucide="download" class="icon-sm"></i> Exportar JSON
           </button>
-          <label class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+          <label class="btn-secondary" style="flex:1;height:40px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
             <i data-lucide="upload" class="icon-sm"></i> Importar JSON
             <input type="file" accept=".json" onchange="importData(event)" class="hidden">
           </label>
@@ -323,47 +367,40 @@
 
       <div class="sync-divider"></div>
 
-      <!-- Cloud Sync -->
       <div class="sync-section">
         <h3 class="sync-section-title">
           <i data-lucide="cloud" class="icon-xs"></i> Sincronización en la Nube
           <span id="sync-status-badge" class="sync-dot-badge ok hidden" style="margin-left:6px"></span>
         </h3>
         <p class="text-xs text-gray-500 mb-4">
-          Usá <strong class="text-gray-300">jsonbin.io</strong> (gratis, sin tarjeta) para acceder a tus datos desde cualquier dispositivo.<br>
-          Creá una cuenta → copiá tu <strong class="text-gray-300">Master Key</strong> → pegala abajo.
+          Usá <strong style="color:#e2e8f0">jsonbin.io</strong> (gratuito) para acceder a tus datos desde cualquier dispositivo.
+          Creá una cuenta → copiá tu <strong style="color:#e2e8f0">Master Key</strong> → pegala abajo.
         </p>
-
         <div class="flex flex-col gap-3">
           <div class="form-group">
             <label>Master Key</label>
             <input id="sync-api-key" type="password" placeholder="$2b$10$…" class="form-control" autocomplete="off">
           </div>
           <div class="form-group">
-            <label>
-              Bin ID
-              <span class="text-gray-600 font-normal normal-case text-xs"> — dejarlo vacío para crear uno nuevo</span>
-            </label>
+            <label>Bin ID <span style="font-weight:400;text-transform:none;font-size:11px;color:#475569">— vacío para crear nuevo</span></label>
             <div class="flex gap-2">
               <input id="sync-bin-id" type="text" placeholder="Auto" class="form-control">
-              <button id="sync-copy-btn" onclick="copyBinId()" class="btn-secondary hidden" title="Copiar Bin ID" style="padding:0 14px;flex-shrink:0">
+              <button id="sync-copy-btn" onclick="copyBinId()" class="btn-secondary hidden" title="Copiar Bin ID" style="padding:0 14px;flex-shrink:0;height:44px">
                 <i data-lucide="copy" class="icon-sm"></i>
               </button>
             </div>
-            <p class="text-xs text-gray-600 mt-1">En otros dispositivos ingresá la misma Master Key + este Bin ID.</p>
+            <p class="text-xs text-gray-600 mt-1">En otros dispositivos usá la misma Master Key + este Bin ID.</p>
           </div>
         </div>
-
-        <p id="sync-status-msg" class="text-xs mt-3 text-gray-600"></p>
-
+        <p id="sync-status-msg" class="text-xs mt-3"></p>
         <div class="flex gap-2 mt-4">
-          <button onclick="setupSync()" id="btn-connect-sync" class="btn-primary" style="flex:1">
+          <button onclick="setupSync()" id="btn-connect-sync" class="btn-primary" style="flex:1;height:40px;font-size:13px">
             <i data-lucide="link" class="icon-sm"></i> Conectar
           </button>
-          <button onclick="syncNow()" id="btn-sync-now" class="btn-secondary hidden">
-            <i data-lucide="refresh-cw" class="icon-sm"></i> Sincronizar
+          <button onclick="syncNow()" id="btn-sync-now" class="btn-secondary hidden" style="height:40px;font-size:13px">
+            <i data-lucide="refresh-cw" class="icon-sm"></i> Sync
           </button>
-          <button onclick="disconnectSync()" id="btn-disconnect" class="btn-icon-del hidden" title="Desconectar" style="padding:7px 14px">
+          <button onclick="disconnectSync()" id="btn-disconnect" class="btn-icon-del hidden" title="Desconectar" style="padding:0 14px;height:40px">
             <i data-lucide="unlink" class="icon-sm"></i>
           </button>
         </div>
