@@ -387,5 +387,65 @@ body { font-family: -apple-system, 'Inter', sans-serif; }
   border: 1px solid rgba(16,185,129,0.2);
 }
 
+/* ===== CLOUD BUTTON (header) ===== */
+.btn-cloud {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.btn-cloud:hover { color: #94a3b8; background: #1e293b; }
+
+/* ===== SYNC STATUS DOT ===== */
+.sync-dot-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+/* When inside .btn-cloud: absolute positioning */
+.btn-cloud .sync-dot-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid #030712;
+}
+.sync-dot-badge.ok      { background: #34d399; }
+.sync-dot-badge.error   { background: #f87171; }
+.sync-dot-badge.loading { background: #fbbf24; animation: pulse-dot 0.7s ease-in-out infinite; }
+
+/* ===== SYNC MODAL ===== */
+.sync-section { padding: 4px 0; }
+
+.sync-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.sync-divider {
+  height: 1px;
+  background: #1e293b;
+  margin: 20px 0;
+}
+
 /* ===== HIDDEN ===== */
 .hidden { display: none !important; }

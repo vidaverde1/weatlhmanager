@@ -47,6 +47,10 @@
         <button onclick="openModal()" class="btn-primary ml-1">
           <i data-lucide="plus" class="icon-sm"></i> Agregar Activo
         </button>
+        <button onclick="openSyncModal()" class="btn-cloud" title="Sincronización y Backup">
+          <i data-lucide="cloud" style="width:15px;height:15px"></i>
+          <span id="sync-badge" class="sync-dot-badge ok hidden"></span>
+        </button>
       </nav>
     </div>
   </header>
@@ -284,6 +288,86 @@
           <button type="submit" class="btn-primary">Guardar Activo</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===== SYNC MODAL ===== -->
+  <div id="sync-modal" class="modal-overlay hidden" onclick="closeSyncModalOutside(event)">
+    <div class="modal-box" style="max-width:500px">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="cloud" class="icon-md text-blue-400"></i>
+          <h2 class="text-lg font-bold">Datos y Sincronización</h2>
+        </div>
+        <button onclick="closeSyncModal()" class="text-gray-500 hover:text-white transition-colors">
+          <i data-lucide="x" class="icon-md"></i>
+        </button>
+      </div>
+
+      <!-- Export / Import -->
+      <div class="sync-section">
+        <h3 class="sync-section-title">
+          <i data-lucide="hard-drive" class="icon-xs"></i> Backup Local
+        </h3>
+        <p class="text-xs text-gray-500 mb-3">Exportá un archivo .json con todos tus activos como respaldo o para importar en otro dispositivo.</p>
+        <div class="flex gap-2">
+          <button onclick="exportData()" class="btn-secondary" style="flex:1">
+            <i data-lucide="download" class="icon-sm"></i> Exportar JSON
+          </button>
+          <label class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+            <i data-lucide="upload" class="icon-sm"></i> Importar JSON
+            <input type="file" accept=".json" onchange="importData(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <div class="sync-divider"></div>
+
+      <!-- Cloud Sync -->
+      <div class="sync-section">
+        <h3 class="sync-section-title">
+          <i data-lucide="cloud" class="icon-xs"></i> Sincronización en la Nube
+          <span id="sync-status-badge" class="sync-dot-badge ok hidden" style="margin-left:6px"></span>
+        </h3>
+        <p class="text-xs text-gray-500 mb-4">
+          Usá <strong class="text-gray-300">jsonbin.io</strong> (gratis, sin tarjeta) para acceder a tus datos desde cualquier dispositivo.<br>
+          Creá una cuenta → copiá tu <strong class="text-gray-300">Master Key</strong> → pegala abajo.
+        </p>
+
+        <div class="flex flex-col gap-3">
+          <div class="form-group">
+            <label>Master Key</label>
+            <input id="sync-api-key" type="password" placeholder="$2b$10$…" class="form-control" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>
+              Bin ID
+              <span class="text-gray-600 font-normal normal-case text-xs"> — dejarlo vacío para crear uno nuevo</span>
+            </label>
+            <div class="flex gap-2">
+              <input id="sync-bin-id" type="text" placeholder="Auto" class="form-control">
+              <button id="sync-copy-btn" onclick="copyBinId()" class="btn-secondary hidden" title="Copiar Bin ID" style="padding:0 14px;flex-shrink:0">
+                <i data-lucide="copy" class="icon-sm"></i>
+              </button>
+            </div>
+            <p class="text-xs text-gray-600 mt-1">En otros dispositivos ingresá la misma Master Key + este Bin ID.</p>
+          </div>
+        </div>
+
+        <p id="sync-status-msg" class="text-xs mt-3 text-gray-600"></p>
+
+        <div class="flex gap-2 mt-4">
+          <button onclick="setupSync()" id="btn-connect-sync" class="btn-primary" style="flex:1">
+            <i data-lucide="link" class="icon-sm"></i> Conectar
+          </button>
+          <button onclick="syncNow()" id="btn-sync-now" class="btn-secondary hidden">
+            <i data-lucide="refresh-cw" class="icon-sm"></i> Sincronizar
+          </button>
+          <button onclick="disconnectSync()" id="btn-disconnect" class="btn-icon-del hidden" title="Desconectar" style="padding:7px 14px">
+            <i data-lucide="unlink" class="icon-sm"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

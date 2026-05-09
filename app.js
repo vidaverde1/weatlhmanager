@@ -18,7 +18,7 @@ let autoRefreshTimer = null;
 const REFRESH_MS     = 60_000; // auto-refresh every 60 s
 
 // ── Persistence ────────────────────────────────────────────────────────────
-const save = () => localStorage.setItem('wm_assets', JSON.stringify(assets));
+const save = () => { localStorage.setItem('wm_assets', JSON.stringify(assets)); schedulePush(); };
 const uid  = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 // ── Dolar Blue ─────────────────────────────────────────────────────────────
@@ -582,6 +582,231 @@ const deleteAsset = id => {
   renderPortfolio();
 };
 
+// ── Export / Import ────────────────────────────────────────────────────────
+const exportData = () => {
+  const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), assets }, null, 2);
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([payload], { type: 'application/json' })),
+    download: `wealthtracker-${new Date().toISOString().slice(0, 10)}.json`,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+const importData = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw      = JSON.parse(ev.target.result);
+      const imported = Array.isArray(raw) ? raw : (raw.assets || []);
+      if (!imported.length) throw new Error('El archivo no contiene activos.');
+      const existingIds = new Set(assets.map(a => a.id));
+      const added = imported.filter(a => !existingIds.has(a.id));
+      assets = [...assets, ...added];
+      save();
+      renderAll();
+      setSyncMsg(`✓ ${added.length} activos importados. ${imported.length - added.length} ya existían.`, 'ok');
+    } catch (err) {
+      setSyncMsg('Error al importar: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+};
+
+// ── Cloud sync (JSONBin.io) ────────────────────────────────────────────────
+const SYNC_KEY   = 'wm_sync_cfg';
+const BIN_URL    = 'https://api.jsonbin.io/v3/b';
+let syncCfg      = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null');
+let syncPushTimer = null;
+
+const saveSyncCfg = () => localStorage.setItem(SYNC_KEY, JSON.stringify(syncCfg));
+
+// Debounced auto-push: called by save() — fires 1.5 s after last change
+const schedulePush = () => {
+  if (!syncCfg?.binId) return;
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(() => cloudPush().catch(() => setSyncDot('error')), 1500);
+};
+
+const binHeaders = (extra = {}) => ({
+  'Content-Type': 'application/json',
+  'X-Master-Key': syncCfg.apiKey,
+  ...extra,
+});
+
+// Push local data → cloud
+const cloudPush = async () => {
+  const body = JSON.stringify({ assets, syncedAt: Date.now() });
+  if (syncCfg.binId) {
+    const r = await fetch(`${BIN_URL}/${syncCfg.binId}`, { method: 'PUT', headers: binHeaders(), body });
+    if (!r.ok) throw new Error(`PUT ${r.status}`);
+  } else {
+    const r = await fetch(BIN_URL, {
+      method: 'POST',
+      headers: binHeaders({ 'X-Bin-Name': 'WealthTracker', 'X-Bin-Private': 'true' }),
+      body,
+    });
+    if (!r.ok) throw new Error(`POST ${r.status}`);
+    const d = await r.json();
+    syncCfg.binId = d.metadata.id;
+    saveSyncCfg();
+    refreshSyncUI();  // show the new bin ID
+  }
+  syncCfg.lastSync = Date.now();
+  saveSyncCfg();
+  setSyncDot('ok');
+};
+
+// Pull cloud → return { assets, syncedAt }
+const cloudPull = async () => {
+  const r = await fetch(`${BIN_URL}/${syncCfg.binId}/latest`, { headers: { 'X-Master-Key': syncCfg.apiKey } });
+  if (!r.ok) throw new Error(`GET ${r.status}`);
+  return (await r.json()).record;
+};
+
+// Union merge: every unique ID survives
+const mergeAssets = (local, cloud) => {
+  const map = {};
+  local.forEach(a => { map[a.id] = a; });
+  cloud.forEach(a => { map[a.id] = a; }); // cloud wins on conflict (more recent push)
+  return Object.values(map);
+};
+
+// ── Sync modal actions ─────────────────────────────────────────────────────
+const openSyncModal  = () => { refreshSyncUI(); document.getElementById('sync-modal').classList.remove('hidden'); lucide.createIcons(); };
+const closeSyncModal = () => document.getElementById('sync-modal').classList.add('hidden');
+const closeSyncModalOutside = e => { if (e.target.id === 'sync-modal') closeSyncModal(); };
+
+// First-time setup or re-connect
+const setupSync = async () => {
+  const apiKey = document.getElementById('sync-api-key').value.trim();
+  const binId  = document.getElementById('sync-bin-id').value.trim();
+  if (!apiKey) { setSyncMsg('Ingresá tu Master Key de JSONBin.io.', 'error'); return; }
+
+  syncCfg = { apiKey, binId: binId || null, lastSync: null };
+  setBtnLoading('btn-connect-sync', true);
+  setSyncMsg('Conectando…', 'loading');
+
+  try {
+    if (syncCfg.binId) {
+      // Existing bin: pull, merge, push
+      setSyncMsg('Descargando datos de la nube…', 'loading');
+      const cloudData  = await cloudPull();
+      const cloudCount = (cloudData.assets || []).length;
+      assets = mergeAssets(assets, cloudData.assets || []);
+      localStorage.setItem('wm_assets', JSON.stringify(assets));
+      setSyncMsg(`Combinando ${assets.length} activos (${cloudCount} en la nube)…`, 'loading');
+    }
+    // Push current (merged) state to cloud
+    setSyncMsg('Subiendo datos…', 'loading');
+    await cloudPush();
+    renderAll();
+    if (!document.getElementById('view-portfolio').classList.contains('hidden')) renderPortfolio();
+    setSyncMsg(`✓ Sincronizado — ${assets.length} activos en la nube`, 'ok');
+  } catch (err) {
+    syncCfg = null;
+    saveSyncCfg();
+    setSyncMsg('Error: ' + err.message, 'error');
+  }
+  setBtnLoading('btn-connect-sync', false);
+  refreshSyncUI();
+};
+
+// Manual full sync (pull + merge + push)
+const syncNow = async () => {
+  if (!syncCfg?.binId) return;
+  setBtnLoading('btn-sync-now', true);
+  setSyncMsg('Sincronizando…', 'loading');
+  try {
+    const cloudData = await cloudPull();
+    assets = mergeAssets(assets, cloudData.assets || []);
+    localStorage.setItem('wm_assets', JSON.stringify(assets));
+    await cloudPush();
+    renderAll();
+    if (!document.getElementById('view-portfolio').classList.contains('hidden')) renderPortfolio();
+    const t = new Date(syncCfg.lastSync).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    setSyncMsg(`✓ Sincronizado a las ${t} — ${assets.length} activos`, 'ok');
+  } catch (err) {
+    setSyncMsg('Error: ' + err.message, 'error');
+  }
+  setBtnLoading('btn-sync-now', false);
+};
+
+const disconnectSync = () => {
+  if (!confirm('¿Desconectar la sincronización en la nube? Tus datos locales no se borran.')) return;
+  syncCfg = null;
+  localStorage.removeItem(SYNC_KEY);
+  refreshSyncUI();
+  setSyncMsg('Sincronización desconectada.', 'error');
+};
+
+const copyBinId = () => {
+  navigator.clipboard?.writeText(syncCfg?.binId || '').then(() => setSyncMsg('Bin ID copiado al portapapeles.', 'ok'));
+};
+
+// Update modal UI to reflect current syncCfg state
+const refreshSyncUI = () => {
+  const connected = !!syncCfg?.binId;
+  const apiKeyEl  = document.getElementById('sync-api-key');
+  const binIdEl   = document.getElementById('sync-bin-id');
+  if (apiKeyEl) apiKeyEl.value = syncCfg?.apiKey || '';
+  if (binIdEl)  binIdEl.value  = syncCfg?.binId  || '';
+  toggle('sync-copy-btn',   connected);
+  toggle('btn-sync-now',    connected);
+  toggle('btn-disconnect',  connected);
+  toggle('btn-connect-sync', true);  // always visible (re-connect allowed)
+  setSyncDot(connected ? 'ok' : null);
+  // Header cloud badge
+  const badge = document.getElementById('sync-badge');
+  if (badge) badge.classList.toggle('hidden', !connected);
+};
+
+const setSyncMsg = (msg, state) => {
+  const el = document.getElementById('sync-status-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `text-xs mt-3 ${state === 'ok' ? 'pos' : state === 'error' ? 'neg' : 'text-amber-400'}`;
+};
+
+const setSyncDot = state => {
+  const el = document.getElementById('sync-status-badge');
+  if (!el) return;
+  if (!state) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.className = `sync-dot-badge ${state}`;
+};
+
+const toggle = (id, show) => document.getElementById(id)?.classList.toggle('hidden', !show);
+
+const setBtnLoading = (id, loading) => {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.classList.toggle('spinning', loading);
+};
+
+// On startup: if sync configured, pull and merge silently
+const initSync = async () => {
+  refreshSyncUI();
+  if (!syncCfg?.binId) return;
+  setSyncDot('loading');
+  try {
+    const cloudData = await cloudPull();
+    const before = assets.length;
+    assets = mergeAssets(assets, cloudData.assets || []);
+    localStorage.setItem('wm_assets', JSON.stringify(assets));
+    if (assets.length !== before) renderAll();
+    syncCfg.lastSync = Date.now();
+    saveSyncCfg();
+    setSyncDot('ok');
+  } catch {
+    setSyncDot('error');
+  }
+};
+
 // ── Master render ──────────────────────────────────────────────────────────
 const renderAll = () => { renderKPIs(); renderCharts(); renderTable(); };
 
@@ -593,6 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // First: fetch dolar blue, then render, then fetch live prices
   await fetchDolarBlue();
+  await initSync();
   renderAll();
   fetchAllPrices();
   startAutoRefresh();
